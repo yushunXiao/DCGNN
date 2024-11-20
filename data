@@ -1,0 +1,75 @@
+# import torch
+# import torch.nn as nn
+# import torch.nn.functional as F
+import numpy as np
+import scipy.io as scio
+import pickle as pkl
+import pickle
+
+
+def load_data_FACED_independent(flag=1,flag_band=5,channel_t=1):
+    features = ['psd', 'de']
+    feature_data = np.zeros(shape=(1,10),dtype=object)
+    subs_de = np.zeros(shape=(123, 28, 32, 30, 5),dtype=object)
+    for i in range(123):  # 123 because range is exclusive at the end
+        # Format the filename with leading zeros
+        filename = f'sub{i:03}.pkl.pkl'
+        # Open and load the pickle file
+        with open('FACED/DE/' + filename, 'rb') as f:
+          subs_de[i] = pkl.load(f)
+    groups = [subs_de[i*12:(i+1)*12] for i in range(9)]
+    groups_last = subs_de[108:]
+    reshaped_groups = [group.reshape(-1, 32, 5) for group in groups]
+    reshaped_last_group = groups_last.reshape(-1, 32, 5)
+    if flag == 3:
+        labels = []
+        for i in range(3):
+            if i == 1:
+                labels.extend([i] * 4)  
+            else:
+                labels.extend([i] * 12)  
+        labels = np.array(labels)
+        expanded_labels = np.repeat(labels, 30)  # (28 * 30,)
+        final_labels1 = np.tile(expanded_labels, (12, 1))  # (12 * 28 * 30, 1)
+        final_labels2 = np.tile(expanded_labels, (15, 1))  # (15 * 28 * 30, 1)
+
+
+        final_labels1 = final_labels1.flatten()
+        final_labels2 = final_labels2.flatten()
+    if flag == 9:
+        labels = []
+        for i in range(9):
+            if i == 1:
+                labels.extend([i] * 4)  
+            else:
+                labels.extend([i] * 3)  
+
+
+        labels = np.array(labels)
+
+        expanded_labels = np.repeat(labels, 30)  # (28 * 30,)
+
+
+        final_labels1 = np.tile(expanded_labels, (12, 1))  # (12 * 28 * 30, 1)
+        final_labels2 = np.tile(expanded_labels, (15, 1))  # (15 * 28 * 30, 1)
+
+
+        final_labels1 = final_labels1.flatten()
+        final_labels2 = final_labels2.flatten()
+
+    return reshaped_groups,reshaped_last_group,final_labels1,final_labels2
+
+def load_data_SEEDV_independent(flag=1):
+    subs_de = np.zeros((16,), dtype=object)
+    feature_data = np.zeros(shape=(1, 16), dtype=object)
+    for i in range(16):
+        filename = f'C:/Users/Shaw/Desktop/code/EEG_DE_features/{i + 1}_123.npz'  
+        with np.load(filename, 'rb') as f:  
+            subs_de[i] = {key: f[key] for key in f.files}  
+            data = pickle.loads(subs_de[i]['data'])
+            label = pickle.loads(subs_de[i]['label'])
+            data_de = np.concatenate(list(data.values()), axis=0)
+            label_de = np.concatenate(list(label.values()), axis=0)
+            data_de = data_de.reshape(-1,62,5)
+            feature_data[0,i] = data_de
+    return feature_data, label_de
